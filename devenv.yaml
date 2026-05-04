@@ -1,0 +1,55 @@
+# DevEnv-Setup Configuration Example
+# Copy this file to ~/.devenv/devenv.yaml
+
+version: 1.0
+name: my-dev-setup
+
+# Tools to install
+tools:
+  nodejs:
+    version: 20
+    package_manager: nvm
+  python:
+    version: "3.11"
+    package_manager: pyenv
+  go:
+    version: "1.21"
+    package_manager: default
+  rust:
+    version: stable
+    package_manager: rustup
+
+# Editor configuration
+editors:
+  - vscode
+  # - cursor
+  # - intellij
+
+# VS Code extensions by category
+vscode_extensions:
+  general: true    # Install all general extensions
+  python: false    # Only install if doing Python dev
+  web: true        # Frontend extensions
+  go: false
+  rust: false
+  docker: true
+
+# Git configuration
+git:
+  name: "Your Name"
+  email: "your@email.com"
+  default_branch: main
+  signing_key: ""  # GPG key ID (optional)
+
+# Common project templates
+templates:
+  default_location: "~/Projects"
+
+# Backup settings
+backup:
+  auto_backup: true
+  backup_interval: weekly
+  backup_location: "~/.devenv/backups"
+  include_gitconfig: true
+  include_ssh_keys: false  # Security: set to true with caution
+  include_env_vars: true
