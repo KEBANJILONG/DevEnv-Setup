@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "devenv-setup"
+version = "1.0.0"
+description = "One-Click Development Environment Setup Tool"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "KEBANJILONG"}
+]
+keywords = ["development", "environment", "setup", "automation", "devops", "tools"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+requires-python = ">=3.8"
+
+[project.scripts]
+devenv = "devenv:main"
+
+[project.urls]
+Homepage = "https://github.com/KEBANJILONG/DevEnv-Setup"
+Repository = "https://github.com/KEBANJILONG/DevEnv-Setup"
+Issues = "https://github.com/KEBANJILONG/DevEnv-Setup/issues"
