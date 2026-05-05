@@ -841,6 +841,207 @@ if __name__ == "__main__":
                 pass
 
     # --------------------------------------------------------
+    # Doctor - diagnose issues
+    # --------------------------------------------------------
+    def doctor(self):
+        """Diagnose and fix common issues."""
+        print(f"\n{Colors.BOLD}🔍 Environment Doctor{Colors.RESET}\n")
+        issues = []
+        fixes = []
+
+        # Check Python version
+        py_version = sys.version_info
+        if py_version < (3, 8):
+            issues.append(f"Python {py_version.major}.{py_version.minor} is too old (need 3.8+)")
+            fixes.append("Install Python 3.8 or later")
+        else:
+            print_success(f"Python version: {py_version.major}.{py_version.minor}.{py_version.micro}")
+
+        # Check PATH
+        path_dirs = os.environ.get("PATH", "").split(os.pathsep)
+        if self.os_type == "windows":
+            local_bin = os.path.expandvars(r"%LOCALAPPDATA%\DevEnv-Setup")
+        else:
+            local_bin = os.path.expanduser("~/.local/bin")
+        if local_bin not in path_dirs:
+            issues.append(f"{local_bin} not in PATH")
+            fixes.append(f"Add {local_bin} to your PATH")
+        else:
+            print_success("DevEnv bin directory in PATH")
+
+        # Check for common issues
+        if self.os_type == "windows":
+            # Check Windows Developer Mode
+            try:
+                result = subprocess.run(
+                    ["reg", "query", "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\AppModelUnlock", "/v", "AllowDevelopmentWithoutDevLicense"],
+                    capture_output=True, text=True, timeout=5,
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
+                if "0x1" not in result.stdout:
+                    issues.append("Windows Developer Mode is off")
+                    fixes.append("Enable Developer Mode in Settings > Update & Security > For developers")
+                else:
+                    print_success("Windows Developer Mode enabled")
+            except Exception:
+                pass
+
+        # Check Git configuration
+        try:
+            result = subprocess.run(
+                ["git", "config", "--global", "user.name"],
+                capture_output=True, text=True, timeout=5,
+                creationflags=subprocess.CREATE_NO_WINDOW if self.os_type == "windows" else 0
+            )
+            if result.returncode != 0 or not result.stdout.strip():
+                issues.append("Git user.name not configured")
+                fixes.append("Run: devenv config git --name 'Your Name' --email 'your@email.com'")
+            else:
+                print_success(f"Git user: {result.stdout.strip()}")
+        except Exception:
+            issues.append("Git not found or not configured")
+
+        # Summary
+        print()
+        if issues:
+            print(f"{Colors.BOLD}⚠️  Issues Found: {len(issues)}{Colors.RESET}")
+            for i, issue in enumerate(issues, 1):
+                print(f"  {i}. {Colors.YELLOW}{issue}{Colors.RESET}")
+            print(f"\n{Colors.BOLD}🔧 Suggested Fixes:{Colors.RESET}")
+            for i, fix in enumerate(fixes, 1):
+                print(f"  {i}. {fix}")
+        else:
+            print_success("All checks passed! Your environment looks good.")
+
+    # --------------------------------------------------------
+    # Update tools
+    # --------------------------------------------------------
+    def update_tools(self, target: str):
+        """Update installed tools."""
+        print(f"\n{Colors.BOLD}🔄 Update Tools{Colors.RESET}\n")
+
+        installed = self.check_environment()
+        to_update = []
+
+        if target == "all":
+            to_update = [t for t, info in installed.items() if info["installed"]]
+        elif target in installed and installed[target]["installed"]:
+            to_update = [target]
+        else:
+            print_error(f"Tool not installed: {target}")
+            return
+
+        if not to_update:
+            print_info("No tools to update")
+            return
+
+        print(f"Tools to update: {', '.join(to_update)}\n")
+
+        for tool in to_update:
+            print_progress(f"Updating {tool}...")
+            if tool == "nodejs":
+                if self.os_type == "windows":
+                    subprocess.run(["npm", "install", "-g", "npm"], check=False)
+                else:
+                    subprocess.run(["npm", "install", "-g", "npm"], check=False)
+                print_success(f"{tool} updated")
+            elif tool == "python":
+                print_info("Use your system package manager to update Python")
+            elif tool == "git":
+                print_info("Use your system package manager to update Git")
+            else:
+                print_warning(f"Auto-update not available for {tool}, please update manually")
+
+    # --------------------------------------------------------
+    # Clean cache
+    # --------------------------------------------------------
+    def clean_cache(self):
+        """Clean downloaded cache files."""
+        print(f"\n{Colors.BOLD}🧹 Clean Cache{Colors.RESET}\n")
+
+        cache_dirs = [
+            Path.home() / ".devenv" / "cache",
+            Path.home() / ".devenv" / "downloads",
+            Path.home() / ".cache" / "devenv",
+        ]
+
+        total_freed = 0
+        for cache_dir in cache_dirs:
+            if cache_dir.exists():
+                size = sum(f.stat().st_size for f in cache_dir.rglob("*") if f.is_file())
+                shutil.rmtree(cache_dir)
+                total_freed += size
+                print_success(f"Cleaned: {cache_dir} ({size / 1024 / 1024:.1f} MB)")
+
+        if total_freed > 0:
+            print(f"\n{Colors.GREEN}Total freed: {total_freed / 1024 / 1024:.1f} MB{Colors.RESET}")
+        else:
+            print_info("No cache to clean")
+
+    # --------------------------------------------------------
+    # Export config
+    # --------------------------------------------------------
+    def export_config(self, output: str):
+        """Export current configuration."""
+        print(f"\n{Colors.BOLD}📤 Export Configuration{Colors.RESET}\n")
+
+        config = {
+            "version": VERSION,
+            "export_date": datetime.datetime.now().isoformat(),
+            "platform": self.os_type,
+            "tools": {},
+            "git": {},
+            "vscode_extensions": [],
+        }
+
+        # Export tool versions
+        env = self.check_environment()
+        for tool, info in env.items():
+            if info["installed"]:
+                config["tools"][tool] = {
+                    "version": info.get("version", "unknown"),
+                    "path": info.get("path", "unknown"),
+                }
+
+        # Export Git config
+        try:
+            result = subprocess.run(
+                ["git", "config", "--global", "--list"],
+                capture_output=True, text=True, timeout=5,
+                creationflags=subprocess.CREATE_NO_WINDOW if self.os_type == "windows" else 0
+            )
+            if result.returncode == 0:
+                for line in result.stdout.strip().split("\n"):
+                    if "=" in line:
+                        key, value = line.split("=", 1)
+                        config["git"][key] = value
+        except Exception:
+            pass
+
+        # Export VS Code extensions
+        if self.check_tool("vscode")["installed"]:
+            try:
+                result = subprocess.run(
+                    ["code", "--list-extensions"],
+                    capture_output=True, text=True, timeout=10,
+                    creationflags=subprocess.CREATE_NO_WINDOW if self.os_type == "windows" else 0
+                )
+                if result.returncode == 0:
+                    config["vscode_extensions"] = result.stdout.strip().split("\n")
+            except Exception:
+                pass
+
+        # Write file
+        output_path = Path(output)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+
+        print_success(f"Configuration exported to: {output_path.absolute()}")
+        print_info(f"Tools: {len(config['tools'])}")
+        print_info(f"Git settings: {len(config['git'])}")
+        print_info(f"VS Code extensions: {len(config['vscode_extensions'])}")
+
+    # --------------------------------------------------------
     # Main command handler
     # --------------------------------------------------------
     def run(self, args: list):
@@ -892,6 +1093,22 @@ if __name__ == "__main__":
         list_parser = subparsers.add_parser("list", help="List available tools/presets/templates")
         list_parser.add_argument("type", choices=["tools", "presets", "templates"],
                                help="What to list")
+
+        # doctor - diagnose issues
+        subparsers.add_parser("doctor", help="Diagnose and fix common issues")
+
+        # update - update installed tools
+        update_parser = subparsers.add_parser("update", help="Update installed tools")
+        update_parser.add_argument("target", nargs="?", default="all",
+                                 help="Tool to update (default: all)")
+
+        # clean - clean cache
+        subparsers.add_parser("clean", help="Clean downloaded cache files")
+
+        # export - export config
+        export_parser = subparsers.add_parser("export", help="Export configuration")
+        export_parser.add_argument("--output", default="devenv-export.json",
+                                 help="Output file path")
 
         parsed = parser.parse_args(args)
 
@@ -962,6 +1179,22 @@ if __name__ == "__main__":
                 print(f"\n{Colors.BOLD}🆕 Available Templates:{Colors.RESET}\n")
                 for tmpl_id, info in PROJECT_TEMPLATES.items():
                     print(f"  {Colors.CYAN}{tmpl_id:<14}{Colors.RESET} {info['description']}")
+
+        elif parsed.command == "doctor":
+            print_banner()
+            self.doctor()
+
+        elif parsed.command == "update":
+            print_banner()
+            self.update_tools(parsed.target)
+
+        elif parsed.command == "clean":
+            print_banner()
+            self.clean_cache()
+
+        elif parsed.command == "export":
+            print_banner()
+            self.export_config(parsed.output)
 
 
 def main():
