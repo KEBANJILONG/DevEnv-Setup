@@ -2,9 +2,11 @@
 
 <div align="center">
 
+![CI](https://github.com/KEBANJILONG/DevEnv-Setup/workflows/CI/badge.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
+![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
 ![Stars](https://img.shields.io/github/stars/KEBANJILONG/DevEnv-Setup.svg?style=social)
 
 **一键开发环境配置工具 | One-Click Development Environment Setup**
